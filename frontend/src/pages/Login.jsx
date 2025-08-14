@@ -2,6 +2,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -30,7 +32,9 @@ const Login = () => {
   };
 
   return (
+    
     <div className="container vh-100 d-flex justify-content-center align-items-center bg-gradient" style={{ background: "linear-gradient(to right, #fc5c7d, #6a82fb)" }}>
+      
       <div className="card shadow-lg p-4" style={{ maxWidth: "400px", width: "100%", borderRadius: "20px" }}>
         <h2 className="text-center mb-4 text-primary">Sign In</h2>
         {message && (
