@@ -144,7 +144,3 @@ npm start
 ## 📄 License
 
 MIT License. Free to use, modify, and distribute.
-
----
-
-If you want, I can also **write this README so that it includes example API endpoints and sample database schema** so anyone cloning the project can set it up without guessing. That would make it plug-and-play.
