@@ -1,173 +1,141 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { Modal, Button } from "react-bootstrap"; // Bootstrap for modals & buttons
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Table, Button, Modal, Form } from 'react-bootstrap';
 
 const AdminTable = () => {
-  const [users, setUsers] = useState([]);
-  const [notes, setNotes] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [admins, setAdmins] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState("add"); // add | edit
+  const [currentAdmin, setCurrentAdmin] = useState({ id: "", name: "", email: "" });
 
-  const [showUserModal, setShowUserModal] = useState(false);
-  const [showNoteModal, setShowNoteModal] = useState(false);
+  const API_URL = "http://localhost:5000/api/admins"; // Change to your Flask API URL
 
-  const [editUser, setEditUser] = useState(null);
-  const [editNote, setEditNote] = useState(null);
+  // Fetch admins
+  const fetchAdmins = async () => {
+    try {
+      const res = await axios.get(API_URL);
+      setAdmins(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-  const [formData, setFormData] = useState({ name: "", email: "" });
-  const [noteData, setNoteData] = useState({ title: "", content: "" });
+  // Add or update admin
+  const handleSave = async () => {
+    try {
+      if (modalType === "add") {
+        await axios.post(API_URL, currentAdmin);
+      } else {
+        await axios.put(`${API_URL}/${currentAdmin.id}`, currentAdmin);
+      }
+      fetchAdmins();
+      setShowModal(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-  // Fetch data
+  // Delete admin
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this admin?")) {
+      try {
+        await axios.delete(`${API_URL}/${id}`);
+        fetchAdmins();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
+  // Open modal for add or edit
+  const openModal = (type, admin = { id: "", name: "", email: "" }) => {
+    setModalType(type);
+    setCurrentAdmin(admin);
+    setShowModal(true);
+  };
+
   useEffect(() => {
-    fetchData();
+    fetchAdmins();
   }, []);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const usersRes = await axios.get("/api/admin/users");
-      const notesRes = await axios.get("/api/admin/notes");
-      setUsers(usersRes.data);
-      setNotes(notesRes.data);
-    } catch (err) {
-      console.error("Error fetching data", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Open User Modal
-  const openUserModal = (user = null) => {
-    setEditUser(user);
-    setFormData(user || { name: "", email: "" });
-    setShowUserModal(true);
-  };
-
-  // Open Note Modal
-  const openNoteModal = (note = null) => {
-    setEditNote(note);
-    setNoteData(note || { title: "", content: "" });
-    setShowNoteModal(true);
-  };
-
-  // Save user
-  const saveUser = async () => {
-    try {
-      if (editUser) {
-        await axios.put(`/api/admin/users/${editUser.id}`, formData);
-      } else {
-        await axios.post("/api/admin/users", formData);
-      }
-      fetchData();
-      setShowUserModal(false);
-    } catch (err) {
-      console.error("Error saving user", err);
-    }
-  };
-
-  // Save note
-  const saveNote = async () => {
-    try {
-      if (editNote) {
-        await axios.put(`/api/admin/notes/${editNote.id}`, noteData);
-      } else {
-        await axios.post("/api/admin/notes", noteData);
-      }
-      fetchData();
-      setShowNoteModal(false);
-    } catch (err) {
-      console.error("Error saving note", err);
-    }
-  };
-
-  // Delete
-  const deleteItem = async (type, id) => {
-    try {
-      await axios.delete(`/api/admin/${type}/${id}`);
-      fetchData();
-    } catch (err) {
-      console.error(`Error deleting ${type}`, err);
-    }
-  };
-
-  if (loading) return <p>Loading...</p>;
-
   return (
-    <div className="p-4">
-      <h2 className="mb-3">Admin Dashboard</h2>
+    <div className="container mt-4">
+      <h2 className="mb-4">Admin Management</h2>
+      <Button variant="success" onClick={() => openModal("add")}>+ Add Admin</Button>
 
-      {/* Users Table */}
-      <h4>Manage Users</h4>
-      <Button variant="success" className="mb-2" onClick={() => openUserModal()}>+ Add User</Button>
-      <table className="table table-bordered">
-        <thead>
-          <tr><th>Name</th><th>Email</th><th>Actions</th></tr>
+      <Table striped bordered hover responsive className="mt-3 shadow-sm">
+        <thead className="table-dark">
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th style={{ width: "200px" }}>Actions</th>
+          </tr>
         </thead>
         <tbody>
-          {users.map(user => (
-            <tr key={user.id}>
-              <td>{user.name}</td>
-              <td>{user.email}</td>
-              <td>
-                <Button size="sm" onClick={() => openUserModal(user)}>Edit</Button>{" "}
-                <Button size="sm" variant="danger" onClick={() => deleteItem("users", user.id)}>Delete</Button>
-              </td>
+          {admins.length > 0 ? (
+            admins.map((admin, index) => (
+              <tr key={admin.id}>
+                <td>{index + 1}</td>
+                <td>{admin.name}</td>
+                <td>{admin.email}</td>
+                <td>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="me-2"
+                    onClick={() => openModal("edit", admin)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => handleDelete(admin.id)}
+                  >
+                    Delete
+                  </Button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="4" className="text-center">No admins found</td>
             </tr>
-          ))}
+          )}
         </tbody>
-      </table>
+      </Table>
 
-      {/* Notes Table */}
-      <h4 className="mt-4">Manage Notes</h4>
-      <Button variant="success" className="mb-2" onClick={() => openNoteModal()}>+ Add Note</Button>
-      <table className="table table-bordered">
-        <thead>
-          <tr><th>Title</th><th>Content</th><th>Actions</th></tr>
-        </thead>
-        <tbody>
-          {notes.map(note => (
-            <tr key={note.id}>
-              <td>{note.title}</td>
-              <td>{note.content}</td>
-              <td>
-                <Button size="sm" onClick={() => openNoteModal(note)}>Edit</Button>{" "}
-                <Button size="sm" variant="danger" onClick={() => deleteItem("notes", note.id)}>Delete</Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* User Modal */}
-      <Modal show={showUserModal} onHide={() => setShowUserModal(false)}>
+      {/* Add/Edit Modal */}
+      <Modal show={showModal} onHide={() => setShowModal(false)}>
         <Modal.Header closeButton>
-          <Modal.Title>{editUser ? "Edit User" : "Add User"}</Modal.Title>
+          <Modal.Title>{modalType === "add" ? "Add Admin" : "Edit Admin"}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <input className="form-control mb-2" placeholder="Name" value={formData.name}
-            onChange={e => setFormData({ ...formData, name: e.target.value })}/>
-          <input className="form-control" placeholder="Email" value={formData.email}
-            onChange={e => setFormData({ ...formData, email: e.target.value })}/>
+          <Form>
+            <Form.Group controlId="adminName" className="mb-3">
+              <Form.Label>Name</Form.Label>
+              <Form.Control
+                type="text"
+                value={currentAdmin.name}
+                onChange={(e) => setCurrentAdmin({ ...currentAdmin, name: e.target.value })}
+                placeholder="Enter name"
+              />
+            </Form.Group>
+            <Form.Group controlId="adminEmail" className="mb-3">
+              <Form.Label>Email</Form.Label>
+              <Form.Control
+                type="email"
+                value={currentAdmin.email}
+                onChange={(e) => setCurrentAdmin({ ...currentAdmin, email: e.target.value })}
+                placeholder="Enter email"
+              />
+            </Form.Group>
+          </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button onClick={() => setShowUserModal(false)}>Cancel</Button>
-          <Button variant="primary" onClick={saveUser}>Save</Button>
-        </Modal.Footer>
-      </Modal>
-
-      {/* Note Modal */}
-      <Modal show={showNoteModal} onHide={() => setShowNoteModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>{editNote ? "Edit Note" : "Add Note"}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <input className="form-control mb-2" placeholder="Title" value={noteData.title}
-            onChange={e => setNoteData({ ...noteData, title: e.target.value })}/>
-          <textarea className="form-control" placeholder="Content" value={noteData.content}
-            onChange={e => setNoteData({ ...noteData, content: e.target.value })}/>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button onClick={() => setShowNoteModal(false)}>Cancel</Button>
-          <Button variant="primary" onClick={saveNote}>Save</Button>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
+          <Button variant="success" onClick={handleSave}>Save</Button>
         </Modal.Footer>
       </Modal>
     </div>
